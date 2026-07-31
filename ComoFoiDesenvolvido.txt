@@ -1,0 +1,25 @@
+--------------------------------------
+instalando o cli springbooot 
+--------------------------------------
+choco install spring-boot-cli -y  
+spring init -d web -g com.baudocapitao -a Bau_do_Capitao_Api -n "Bau do Capitao Api" --package-name com.baudocapitao.api Bau_do_Capitao_Api
+cd Bau_do_Capitao_Api
+--------------------------------------
+criar metodo helloword 
+--------------------------------------
+mkdir src\main\java\com\baudocapitao\api\controller
+cd src\main\java\com\baudocapitao\api\controller
+touch HelloController.java
+-------------------------------------
+dar permissao, rodar, testar 
+-------------------------------------
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser   
+.\gradlew.bat bootRun
+------------------------------------------
+Configurando Swagger 
+-----------------------------------------
+adicione implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0' para build.gradle
+mkdir src\main\java\com\baudocapitao\api\config
+cd src\main\java\com\baudocapitao\api\config
+touch OpenApiConfig.java
+

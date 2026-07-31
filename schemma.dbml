@@ -1,0 +1,99 @@
+// =============================================
+// SISTEMA DE FINANÇAS PESSOAIS - Baú do Capitão
+// =============================================
+
+// ---------- ENUMS ----------
+enum account_type {
+  CHECKING
+  SAVINGS
+  CREDIT_CARD
+  CASH
+}
+
+enum transaction_type {
+  INCOME
+  EXPENSE
+}
+
+enum payment_method {
+  CASH
+  CREDIT
+  DEBIT
+  PIX
+  TRANSFER
+}
+
+// ---------- TABELAS ----------
+
+Table users {
+  id integer [primary key]
+  name varchar(100) [not null]
+  email varchar(150) [unique, not null]
+  password_hash varchar(255) [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table accounts {
+  id integer [primary key]
+  user_id integer [not null]
+  name varchar(100) [not null]
+  type account_type [not null]
+  balance decimal(15,2) [default: 0.00]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table categories {
+  id integer [primary key]
+  user_id integer [null] // NULL = global, preenchido = pessoal
+  name varchar(80) [not null]
+  type transaction_type [not null]
+  icon varchar(50) [null]
+  is_global boolean [default: false]
+  created_at timestamp [default: `now()`]
+}
+
+Table transactions {
+  id integer [primary key]
+  user_id integer [not null]
+  account_id integer [not null]
+  category_id integer [null]
+  description text [not null]
+  amount decimal(15,2) [not null]
+  type transaction_type [not null]
+  date timestamp [not null]
+  payment_method payment_method [not null]
+  is_recurring boolean [default: false]
+  parent_transaction_id integer [null] // auto-relacionamento para parcelas
+  installment_number integer [null]
+  total_installments integer [null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table budgets {
+  id integer [primary key]
+  user_id integer [not null]
+  category_id integer [not null]
+  month_year varchar(7) [not null] // formato YYYY-MM
+  limit_amount decimal(15,2) [not null]
+  spent_amount decimal(15,2) [default: 0.00]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    (user_id, category_id, month_year) [unique]
+  }
+}
+
+// ---------- RELACIONAMENTOS ----------
+
+Ref: accounts.user_id > users.id
+Ref: categories.user_id > users.id
+Ref: transactions.user_id > users.id
+Ref: transactions.account_id > accounts.id
+Ref: transactions.category_id > categories.id
+Ref: transactions.parent_transaction_id > transactions.id
+Ref: budgets.user_id > users.id
+Ref: budgets.category_id > categories.id

@@ -1,0 +1,13 @@
+http://localhost:8080/swagger-ui/index.html
+http://localhost:8080/api/hello
+
+-----------------
+build
+-------------------
+.\gradlew.bat build
+.\gradlew.bat build -x test
+.\gradlew.bat clean build
+------------------
+rodar
+------------------
+./gradlew bootRun
