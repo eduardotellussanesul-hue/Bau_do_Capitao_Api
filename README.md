@@ -24,7 +24,6 @@ O **Bau do Capitão** é uma API que permitirá:
 - Visualizar saldo e relatórios
 - Definir orçamentos mensais
 
-Atualmente, temos a **estrutura base** (Spring Boot com Gradle) e um endpoint de exemplo para testar o funcionamento. A documentação interativa (Swagger) já está configurada e acessível via navegador.
 ---
 
 ## 🧰 Tecnologias utilizadas
