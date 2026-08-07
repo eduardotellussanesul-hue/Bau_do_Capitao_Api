@@ -14,6 +14,7 @@ touch HelloController.java
 dar permissao, rodar, testar 
 -------------------------------------
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser   
+.\gradlew.bat build
 .\gradlew.bat bootRun
 ------------------------------------------
 Configurando Swagger 
