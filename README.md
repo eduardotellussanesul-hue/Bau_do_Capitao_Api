@@ -1,91 +1,215 @@
 # 🏴‍☠️ Bau do Capitão – API de Controle Financeiro
 
-Bem-vindo ao projeto Bau do Capitão! Esta é uma API REST desenvolvida em Java com Spring Boot que servirá como backend para um sistema de finanças pessoais. Atualmente, o projeto possui a estrutura base configurada, um endpoint de exemplo (/api/hello) e documentação interativa via Swagger.
+API REST para gerenciamento financeiro pessoal, construída com Spring Boot e MongoDB. Oferece cadastro de usuários, contas, categorias e transações, com suporte a parcelamento, atualização automática de saldos, paginação, filtros e documentação Swagger.
+
+---
 
 ## 📌 Índice
 
-- Sobre o projeto
-- Tecnologias utilizadas
-- Pré‑requisitos (Windows e Linux)
-- Como executar o projeto (clone + execução)
-- Acessar o Swagger
-- Estrutura do projeto
-- Detalhamento do que foi feito até agora
-- Comandos úteis
-- Próximos passos
-- Licença
-
-## 🧭 Sobre o projeto
-
-O **Bau do Capitão** é uma API que permitirá:
-
-- Registrar receitas e despesas
-- Categorizar transações
-- Visualizar saldo e relatórios
-- Definir orçamentos mensais
+- [Visão Geral](#visão-geral)
+- [Modelo de Dados](#modelo-de-dados)
+- [Arquitetura e Decisões Técnicas](#arquitetura-e-decisões-técnicas)
+- [Endpoints da API](#endpoints-da-api)
+  - [Usuários](#usuários)
+  - [Contas](#contas)
+  - [Categorias](#categorias)
+  - [Transações](#transações)
+- [Configuração e Execução](#configuração-e-execução)
+- [Tecnologias Utilizadas](#tecnologias-utilizadas)
+- [Estrutura do Projeto](#estrutura-do-projeto)
+- [Próximos Passos](#próximos-passos)
 
 ---
 
-## 🧰 Tecnologias utilizadas
+## Visão Geral
 
-- **Java 17** (LTS)
-- **Spring Boot 3.2.2**
-- **Gradle** (Wrapper incluso – você não precisa instalar)
-- **SpringDoc OpenAPI 2.5.0** (Swagger UI)
+O **Bau do Capitão** é uma API REST que serve como backend para um sistema de finanças pessoais. Ela foi projetada para ser consumida por aplicações web ou mobile, oferecendo:
+
+- Gestão de usuários
+- Múltiplas contas por usuário (corrente, poupança, cartão de crédito, dinheiro)
+- Categorias de transações (globais e personalizadas)
+- Lançamento de receitas e despesas com parcelamento
+- Atualização automática do saldo das contas
+- Listagens paginadas e filtradas
+- Documentação interativa via Swagger UI
+
+**Principais funcionalidades implementadas:**
+
+- CRUD completo para todas as entidades
+- Transações parceladas (criação em lote)
+- Reversão de saldo ao atualizar/excluir transações
+- Filtros por nome, email, tipo, data, conta, categoria
+- Ordenação por qualquer campo
+- DTOs para respostas enxutas e enriquecidas
 
 ---
+
+## Modelo de Dados
+
+Abaixo estão as entidades principais e seus relacionamentos.
+
+### Entidades
+
+#### Usuário (`User`)
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `id` | String (ObjectId) | Identificador único |
+| `name` | String | Nome do usuário |
+| `email` | String | E-mail único |
+| `passwordHash` | String | Hash da senha |
+| `createdAt` | LocalDateTime | Data de criação |
+| `updatedAt` | LocalDateTime | Última atualização |
+
+#### Conta (`Account`)
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `id` | String | Identificador único |
+| `userId` | String | Referência ao usuário dono |
+| `name` | String | Nome da conta (ex: "Nubank") |
+| `type` | Enum | `CHECKING`, `SAVINGS`, `CREDIT_CARD`, `CASH` |
+| `balance` | BigDecimal | Saldo atual |
+| `createdAt`, `updatedAt` | LocalDateTime | Auditoria |
+
+#### Categoria (`Category`)
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `id` | String | Identificador |
+| `userId` | String ou null | Se null, é global; senão, pessoal |
+| `name` | String | Nome da categoria |
+| `type` | Enum | `INCOME` ou `EXPENSE` |
+| `icon` | String | Emoji opcional |
+| `isGlobal` | Boolean | Indica se é global |
+| `createdAt`, `updatedAt` | LocalDateTime | Auditoria |
+
+#### Transação (`Transaction`)
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `id` | String | Identificador |
+| `userId` | String | Usuário dono |
+| `accountId` | String | Conta associada |
+| `categoryId` | String ou null | Categoria (opcional) |
+| `description` | String | Descrição do lançamento |
+| `amount` | BigDecimal | Valor (positivo) |
+| `type` | Enum | `INCOME` ou `EXPENSE` |
+| `date` | LocalDateTime | Data da transação |
+| `paymentMethod` | Enum | `CASH`, `CREDIT`, `DEBIT`, `PIX`, `TRANSFER` |
+| `isRecurring` | Boolean | Se é recorrente |
+| `parentTransactionId` | String | Auto-relacionamento para parcelas |
+| `installmentNumber` | Integer | Número da parcela (1..N) |
+| `totalInstallments` | Integer | Total de parcelas |
+| `createdAt`, `updatedAt` | LocalDateTime | Auditoria |
+
+### Relacionamentos
+
+- `Account.userId` → `User.id`
+- `Category.userId` → `User.id` (pode ser nulo para globais)
+- `Transaction.userId` → `User.id`
+- `Transaction.accountId` → `Account.id`
+- `Transaction.categoryId` → `Category.id`
+- `Transaction.parentTransactionId` → `Transaction.id` (auto-relacionamento)
+
 ---
-### ✅ Windows
-1° Primeiro, instale o Java 17 se não tiver. 
-2° Baixe o instalador do Eclipse Temurin (OpenJDK) em https://adoptium.net/temurin/releases/?version=17, escolha o arquivo .msi para Windows (x64). 
-3° Após a instalação, feche e reabra o PowerShell e verifique com o comando: java -version. 
-4° Em seguida, instale o Spring Boot CLI via Chocolatey. 
-5° Abra o PowerShell como Administrador e execute  choco install spring-boot-cli -y.
 
+## Arquitetura e Decisões Técnicas
 
-### ✅  Linux (Ubuntu/Debian)
-1° Instale o Java 17 com os comandos: 
-2° sudo apt update; 
-3sudo apt install openjdk-17-jdk -y; 
-java -version. 
-Depois, instale o Spring Boot CLI via SDKMAN: 
-curl -s "https://get.sdkman.io" | bash; source "$HOME/.sdkman/bin/sdkman-init.sh"; 
-sdk install springboot. 
+### Camadas (Clean Architecture)
 
+- **Controller**: Responsável por receber requisições HTTP, validar parâmetros e chamar os serviços. Retorna DTOs.
+- **Service**: Contém toda a lógica de negócio (cálculo de saldos, parcelamento, validações). Transacional.
+- **Repository**: Interface com MongoDB (Spring Data). Usa `MongoTemplate` para queries dinâmicas (transações).
+- **Model**: Entidades JPA-like (documentos MongoDB).
+- **DTO**: Objetos de transferência para respostas da API, evitando expor dados internos.
+- **Mapper**: Classe centralizada que converte `Model` → `DTO` para todas as entidades.
 
-## Para rodar a aplicação, utilize o Gradle Wrapper – você não precisa instalar o Gradle.  
-### No Windows (PowerShell): 
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser (apenas se necessário); 
-.\gradlew.bat bootRun. 
+### Destaques
 
-### No Linux (terminal): 
-./gradlew bootRun. 
-A primeira execução pode demorar alguns minutos enquanto o Gradle baixa as dependências. Q
-uando a aplicação iniciar, você verá uma mensagem como "Started BauDoCapitaoApiApplication in X seconds".
+- **Paginação e Filtros**: Endpoints como `/api/users/pagination`, `/api/transactions/paged` usam `Pageable` do Spring Data, com parâmetros `page`, `size`, `sort`. Filtros opcionais (nome, email, data, etc.) são aplicados dinamicamente.
+- **Atualização Automática de Saldo**: Ao criar/atualizar/excluir uma transação, o saldo da conta é recalculado automaticamente (reversão + nova aplicação).
+- **Parcelamento**: O endpoint `/api/transactions/installments` recebe uma transação raiz e gera N parcelas (com valores iguais), vinculadas via `parentTransactionId`.
+- **Enriquecimento de DTO**: `TransactionResponseDTO` inclui `accountName` e `categoryName`, obtidos via consultas em lote para evitar N+1.
+- **Categorias Globais**: O sistema pré-carrega categorias padrão (ex: "Salário", "Alimentação") que são visíveis para todos os usuários, mas podem ser complementadas com categorias pessoais.
 
-## Acessar o Swagger (documentação da API): 
+---
 
-Com a aplicação rodando, abra o navegador em http://localhost:8080/swagger-ui.html. 
-Lá você encontrará todos os endpoints disponíveis, incluindo o GET /api/hello. 
-Você pode testar as requisições diretamente pela interface. 
-A documentação JSON (OpenAPI) também está disponível em http://localhost:8080/v3/api-docs.
+## Endpoints da API
 
-## Estrutura do projeto: 
-Bau_do_Capitao_Api/ 
-|-- src/ 
-|---- main/ 
-|------ java/com/baudocapitao/api/ 
-|-------- BauDoCapitaoApiApplication.java (classe principal) 
-|-------- controller/ 
-|---------- HelloController.java (endpoint de exemplo) 
-|-------- config/ 
-|---------- OpenApiConfig.java (configuração do Swagger) 
-|------ resources/ 
-|-------- application.properties 
-|-------- static/ 
-|-------- templates/ 
-|-- build.gradle (dependências) 
-|-- settings.gradle 
-|-- gradlew (Linux/Mac) / gradlew.bat (Windows) (Wrapper do Gradle) 
-|-- .gitignore |-- README.md
+Todos os endpoints são prefixados com `/api`. A documentação completa (com exemplos) está disponível no Swagger: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html).
 
+### Usuários
+
+| Método | Caminho | Descrição |
+|--------|---------|-----------|
+| POST | `/users` | Criar novo usuário |
+| GET | `/users` | Listar todos (sem paginação) |
+| GET | `/users/pagination` | Listar com paginação e filtros (`name`, `email`) |
+| GET | `/users/{id}` | Buscar por ID |
+| PUT | `/users/{id}` | Atualizar usuário |
+| DELETE | `/users/{id}` | Deletar usuário |
+
+### Contas
+
+| Método | Caminho | Descrição |
+|--------|---------|-----------|
+| POST | `/accounts` | Criar nova conta |
+| GET | `/accounts` | Listar paginado (obrigatório `userId`, opcional `type`) |
+| GET | `/accounts/{id}` | Buscar por ID |
+| PUT | `/accounts/{id}` | Atualizar conta |
+| DELETE | `/accounts/{id}` | Deletar conta |
+
+### Categorias
+
+| Método | Caminho | Descrição |
+|--------|---------|-----------|
+| POST | `/categories` | Criar categoria (global ou pessoal) |
+| GET | `/categories` | Listar paginado (opcionais `userId`, `type`) – retorna globais + pessoais se `userId` informado |
+| GET | `/categories/global` | Listar apenas globais |
+| GET | `/categories/{id}` | Buscar por ID |
+| PUT | `/categories/{id}` | Atualizar categoria |
+| DELETE | `/categories/{id}` | Deletar categoria |
+
+### Transações
+
+| Método | Caminho | Descrição |
+|--------|---------|-----------|
+| POST | `/transactions` | Criar transação simples (atualiza saldo) |
+| POST | `/transactions/installments?totalInstallments=N` | Criar transação parcelada (gera N parcelas) |
+| GET | `/transactions/paged` | Listar paginado com filtros (`userId` obrigatório; opcionais: `accountId`, `categoryId`, `type`, `startDate`, `endDate`) |
+| GET | `/transactions/account/{accountId}` | Listar transações de uma conta |
+| GET | `/transactions/user/{userId}/period?start=...&end=...` | Listar transações de um usuário em um período |
+| GET | `/transactions/{id}` | Buscar por ID |
+| PUT | `/transactions/{id}` | Atualizar transação (reverte saldo antigo e aplica novo) |
+| DELETE | `/transactions/{id}` | Deletar transação (reverte saldo) |
+
+**Parâmetros de paginação comuns a todos os endpoints paginados:**
+- `page` (padrão 0) – número da página (base 0)
+- `size` (padrão 10) – itens por página
+- `sort` (opcional) – campo e direção, ex: `sort=date,desc`
+
+---
+
+## Configuração e Execução
+
+### Pré‑requisitos
+
+- Java 17+
+- MongoDB (local ou Atlas)
+- Git (para clonar)
+
+### Passos
+
+1. Clone o repositório:
+   ```bash
+   git clone <url>
+   cd Bau_do_Capitao_Api
+
+2. Configure o MongoDB no arquivo src/main/resources/application.properties:
+
+properties
+spring.data.mongodb.uri=mongodb+srv://<usuario>:<senha>@<cluster>/?retryWrites=true&w=majority
+spring.data.mongodb.database=bau_do_capitao
+
+3. Execute a aplicação:
+
+bash
+./gradlew bootRun        # Linux/Mac
+gradlew.bat bootRun      # Windows
