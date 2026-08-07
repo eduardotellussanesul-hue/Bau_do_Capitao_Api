@@ -82,6 +82,12 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+    @PostMapping("/login")
+    @Operation(summary = "Login do usuário")
+    public ResponseEntity<Boolean> login(@RequestParam String email, @RequestParam String passwordHash) {
+        boolean authenticated = userService.login(email, passwordHash);
+        return ResponseEntity.ok(authenticated);
+    }
 
     
 }

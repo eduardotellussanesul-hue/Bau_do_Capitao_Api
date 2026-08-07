@@ -74,4 +74,14 @@ public class UserService {
         }
         userRepository.deleteById(id);
     }
+
+    public boolean login(String email, String passwordHash) 
+    {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            return user.getPasswordHash().equals(passwordHash);
+        }
+        return false;
+    }
 }
