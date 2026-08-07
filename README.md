@@ -204,12 +204,12 @@ Todos os endpoints são prefixados com `/api`. A documentação completa (com ex
 
 2. Configure o MongoDB no arquivo src/main/resources/application.properties:
 
-properties
-spring.data.mongodb.uri=mongodb+srv://<usuario>:<senha>@<cluster>/?retryWrites=true&w=majority
-spring.data.mongodb.database=bau_do_capitao
+    ```bash
+    spring.data.mongodb.uri=mongodb+srv://<usuario>:<senha>@<cluster>/?retryWrites=true&w=majority
+    spring.data.mongodb.database=bau_do_capitao
 
 3. Execute a aplicação:
 
-bash
-./gradlew bootRun        # Linux/Mac
-gradlew.bat bootRun      # Windows
+    ```bash
+    ./gradlew bootRun        # Linux/Mac
+    gradlew.bat bootRun      # Windows
